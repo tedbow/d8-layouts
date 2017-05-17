@@ -23,3 +23,5 @@ hidden:
   comment: true
   field_image: true
   field_tags: true
+layout_id: layout_default
+layout_settings: {  }

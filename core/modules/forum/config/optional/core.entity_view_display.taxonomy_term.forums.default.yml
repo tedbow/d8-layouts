@@ -20,3 +20,5 @@ content:
     label: above
 hidden:
   forum_container: true
+layout_id: layout_default
+layout_settings: {  }

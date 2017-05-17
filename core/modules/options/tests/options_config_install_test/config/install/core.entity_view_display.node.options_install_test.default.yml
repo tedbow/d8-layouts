@@ -25,3 +25,5 @@ content:
 hidden:
   langcode: true
 third_party_settings: {  }
+layout_id: layout_default
+layout_settings: {  }

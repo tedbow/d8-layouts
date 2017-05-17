@@ -36,3 +36,5 @@ content:
     label: inline
 hidden:
   more_link: true
+layout_id: layout_default
+layout_settings: {  }

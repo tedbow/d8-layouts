@@ -91,3 +91,5 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden: {  }
+layout_id: layout_default
+layout_settings: {  }

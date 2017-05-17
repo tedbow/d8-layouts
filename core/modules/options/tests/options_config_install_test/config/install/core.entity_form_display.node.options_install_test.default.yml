@@ -59,3 +59,5 @@ content:
     third_party_settings: {  }
 hidden: {  }
 third_party_settings: {  }
+layout_id: layout_default
+layout_settings: {  }

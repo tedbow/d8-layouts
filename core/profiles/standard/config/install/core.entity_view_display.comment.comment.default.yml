@@ -22,3 +22,5 @@ content:
     weight: 100
     region: content
 hidden: {  }
+layout_id: layout_default
+layout_settings: {  }

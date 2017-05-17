@@ -27,3 +27,5 @@ content:
     third_party_settings: {  }
 hidden:
   forum_container: true
+layout_id: layout_default
+layout_settings: {  }

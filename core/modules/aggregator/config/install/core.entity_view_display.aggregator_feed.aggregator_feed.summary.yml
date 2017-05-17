@@ -22,3 +22,5 @@ hidden:
   feed_icon: true
   image: true
   link: true
+layout_id: layout_default
+layout_settings: {  }

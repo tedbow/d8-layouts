@@ -18,3 +18,5 @@ hidden:
   description: true
   feed: true
   link: true
+layout_id: layout_default
+layout_settings: {  }

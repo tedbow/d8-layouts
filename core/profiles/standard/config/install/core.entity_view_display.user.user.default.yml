@@ -25,3 +25,5 @@ content:
     third_party_settings: {  }
     label: hidden
 hidden: {  }
+layout_id: layout_default
+layout_settings: {  }
