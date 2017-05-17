@@ -4,13 +4,16 @@ namespace Drupal\Core\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
+use Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Entity\Display\EntityDisplayInterface;
+use Drupal\Core\Layout\LayoutInterface;
+use Drupal\Core\Plugin\DefaultSingleLazyPluginCollection;
 
 /**
  * Provides a common base class for entity view and form displays.
  */
-abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDisplayInterface {
+abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDisplayInterface, EntityDisplayWithLayoutInterface {
 
   /**
    * The 'mode' for runtime EntityDisplay objects used to render entities with
@@ -50,6 +53,13 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   protected $fieldDefinitions;
 
   /**
+   * An array of information about the extra fields for this display context.
+   *
+   * @var array
+   */
+  protected $extraFields;
+
+  /**
    * View or form mode to be displayed.
    *
    * @var string
@@ -77,6 +87,27 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    * @var array
    */
   protected $hidden = [];
+
+  /**
+   * The layout ID.
+   *
+   * @var string
+   */
+  protected $layout_id = 'layout_onecol';
+
+  /**
+   * The layout settings.
+   *
+   * @var array
+   */
+  protected $layout_settings = [];
+
+  /**
+   * The plugin collection that holds the layout plugin for this entity.
+   *
+   * @var \Drupal\Core\Plugin\DefaultSingleLazyPluginCollection
+   */
+  protected $pluginCollection;
 
   /**
    * The original view or form mode that was requested (case of view/form modes
@@ -156,9 +187,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
     if ($this->mode !== static::CUSTOM_MODE) {
       $default_region = $this->getDefaultRegion();
       // Fill in defaults for extra fields.
-      $context = $this->displayContext == 'view' ? 'display' : $this->displayContext;
-      $extra_fields = \Drupal::entityManager()->getExtraFields($this->targetEntityType, $this->bundle);
-      $extra_fields = isset($extra_fields[$context]) ? $extra_fields[$context] : [];
+      $extra_fields = $this->getExtraFields();
       foreach ($extra_fields as $name => $definition) {
         if (!isset($this->content[$name]) && !isset($this->hidden[$name])) {
           // Extra fields are visible by default unless they explicitly say so.
@@ -412,6 +441,22 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   }
 
   /**
+   * Gets the extra fields for this display.
+   *
+   * @return array
+   *   An array of extra field info for the entity type and bundle used by this
+   *   entity display.
+   */
+  protected function getExtraFields() {
+    if (!isset($this->extraFields)) {
+      $context = $this->displayContext == 'view' ? 'display' : $this->displayContext;
+      $extra_fields = \Drupal::service('entity_field.manager')->getExtraFields($this->targetEntityType, $this->bundle);
+      $this->extraFields = isset($extra_fields[$context]) ? $extra_fields[$context] : [];
+    }
+    return $this->extraFields;
+  }
+
+  /**
    * Gets the field definition of a field.
    */
   protected function getFieldDefinition($field_name) {
@@ -424,7 +469,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    */
   protected function getFieldDefinitions() {
     if (!isset($this->fieldDefinitions)) {
-      $definitions = \Drupal::entityManager()->getFieldDefinitions($this->targetEntityType, $this->bundle);
+      $definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions($this->targetEntityType, $this->bundle);
       // For "official" view modes and form modes, ignore fields whose
       // definition states they should not be displayed.
       if ($this->mode !== static::CUSTOM_MODE) {
@@ -545,13 +590,112 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   }
 
   /**
+   * Gets the fields that need to be processed.
+   *
+   * @param array $build
+   *   A renderable array representing the entity content or form.
+   *
+   * @return array
+   *   An array of configurable fields present in the build.
+   */
+  protected function getFields(array $build) {
+    $components = $this->getComponents();
+
+    // Ignore any extra fields from the list of field definitions. Field
+    // definitions can have a non-configurable display, but all extra fields are
+    // always displayed.
+    $field_definitions = array_diff_key($this->getFieldDefinitions(), $this->getExtraFields());
+
+    $fields_to_exclude = array_filter($field_definitions, function (FieldDefinitionInterface $field_definition) {
+      // Remove fields with a non-configurable display.
+      return !$field_definition->isDisplayConfigurable($this->displayContext);
+    });
+    $components = array_diff_key($components, $fields_to_exclude);
+
+    // Only include fields present in the build.
+    $components = array_intersect_key($components, $build);
+
+    return $components;
+  }
+
+  /**
    * Gets the default region.
    *
    * @return string
    *   The default region for this display.
    */
-  protected function getDefaultRegion() {
-    return 'content';
+  public function getDefaultRegion() {
+    return $this->getLayout()->getPluginDefinition()->getDefaultRegion();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getLayoutId() {
+    return $this->layout_id;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getLayoutSettings() {
+    return $this->layout_settings;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setLayoutFromId($layout_id, array $layout_settings = []) {
+    $original_layout_id = $this->getLayoutId();
+    $this->layout_id = $layout_id;
+    $this->getPluginCollection()->addInstanceID($layout_id, $layout_settings);
+
+    if ($original_layout_id !== $layout_id) {
+      // @todo Devise a mechanism for mapping old regions to new ones in
+      //   https://www.drupal.org/node/2796877.
+      $layout_definition = $this->getLayout()->getPluginDefinition();
+      $new_region = $layout_definition->getDefaultRegion();
+      $layout_regions = $layout_definition->getRegions();
+      foreach ($this->getComponents() as $name => $component) {
+        if (!isset($component['region']) || !isset($layout_regions[$component['region']])) {
+          $component['region'] = $new_region;
+          $this->setComponent($name, $component);
+        }
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setLayout(LayoutInterface $layout) {
+    $this->setLayoutFromId($layout->getPluginId(), $layout->getConfiguration());
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getLayout() {
+    return $this->getPluginCollection()->get($this->getLayoutId());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function &getFieldFromBuild($field_name, array &$build) {
+    $field_component = $this->getComponent($field_name);
+    if (isset($build[$field_name])) {
+      $output = &$build[$field_name];
+    }
+    elseif (isset($field_component['region']) && isset($build['_layout'][$field_component['region']][$field_name])) {
+      $output = &$build['_layout'][$field_component['region']][$field_name];
+    }
+    else {
+      $output = [];
+    }
+    return $output;
   }
 
   /**
@@ -593,6 +737,28 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    */
   protected function getLogger() {
     return \Drupal::logger('system');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPluginCollections() {
+    return [
+      'layout_settings' => $this->getPluginCollection(),
+    ];
+  }
+
+  /**
+   * Encapsulates the creation of the layout plugin collection.
+   *
+   * @return \Drupal\Core\Plugin\DefaultSingleLazyPluginCollection
+   *   The layout plugin collection.
+   */
+  protected function getPluginCollection() {
+    if (!$this->pluginCollection) {
+      $this->pluginCollection = new DefaultSingleLazyPluginCollection(\Drupal::service('plugin.manager.core.layout'), $this->getLayoutId(), $this->getLayoutSettings());
+    }
+    return $this->pluginCollection;
   }
 
 }

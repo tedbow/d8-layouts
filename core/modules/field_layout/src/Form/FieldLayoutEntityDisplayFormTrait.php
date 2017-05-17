@@ -5,7 +5,7 @@ namespace Drupal\field_layout\Form;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Plugin\PluginFormInterface;
-use Drupal\field_layout\Display\EntityDisplayWithLayoutInterface;
+use Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface;
 
 /**
  * Provides shared code for entity display forms.
@@ -99,7 +99,7 @@ trait FieldLayoutEntityDisplayFormTrait {
   /**
    * Gets the layout plugin for the currently selected field layout.
    *
-   * @param \Drupal\field_layout\Display\EntityDisplayWithLayoutInterface $entity
+   * @param \Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface $entity
    *   The current form entity.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The current state of the form.
@@ -169,7 +169,7 @@ trait FieldLayoutEntityDisplayFormTrait {
   /**
    * Gets the form entity.
    *
-   * @return \Drupal\field_layout\Display\EntityDisplayWithLayoutInterface
+   * @return \Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface
    *   The current form entity.
    */
   abstract public function getEntity();

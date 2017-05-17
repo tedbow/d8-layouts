@@ -17,8 +17,8 @@ trait EntityViewTrait {
    */
   protected function buildEntityView(EntityInterface $entity, $view_mode = 'full', $langcode = NULL, $reset = FALSE) {
     $build = $this->buildFullEntityView($entity, $view_mode, $langcode, $reset);
-    // Currently all fields are stored at the top level, return the full array.
-    return $build;
+    // By default all fields will be nested in the onecol layout.
+    return $build['_layout']['content'];
   }
 
   /**

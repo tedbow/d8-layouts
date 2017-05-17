@@ -2,6 +2,8 @@
 
 namespace Drupal\Tests\Core\Config\Entity;
 
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Layout\LayoutPluginManagerInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -59,6 +61,11 @@ class EntityDisplayBaseTest extends UnitTestCase {
    * @covers ::setTargetBundle
    */
   public function testSetTargetBundle() {
+    $layout_plugin_manager = $this->prophesize(LayoutPluginManagerInterface::class);
+    $container = new ContainerBuilder();
+    $container->set('plugin.manager.core.layout', $layout_plugin_manager->reveal());
+    \Drupal::setContainer($container);
+
     $mock = $this->getMockForAbstractClass('\Drupal\Core\Entity\EntityDisplayBase', [], '', FALSE);
     $reflection = new \ReflectionProperty($mock, 'bundle');
     $reflection->setAccessible(TRUE);

@@ -1,20 +1,20 @@
 <?php
 
-namespace Drupal\Tests\field_layout\Kernel;
+namespace Drupal\KernelTests\Core\Entity;
 
-use Drupal\field_layout\Entity\FieldLayoutEntityViewDisplay;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
- * @coversDefaultClass \Drupal\field_layout\Entity\FieldLayoutEntityDisplayTrait
- * @group field_layout
+ * @coversDefaultClass \Drupal\Core\Entity\Entity\EntityViewDisplay
+ * @group Entity
  */
-class FieldLayoutEntityDisplayTest extends KernelTestBase {
+class EntityViewDisplayTest extends KernelTestBase {
 
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['field_layout', 'entity_test', 'field_layout_test', 'system'];
+  protected static $modules = ['entity_test', 'field_layout_test', 'layout_discovery'];
 
   /**
    * @covers ::preSave
@@ -22,7 +22,7 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
    */
   public function testPreSave() {
     // Create an entity display with one hidden and one visible field.
-    $entity_display = FieldLayoutEntityViewDisplay::create([
+    $entity_display = EntityViewDisplay::create([
       'targetEntityType' => 'entity_test',
       'bundle' => 'entity_test',
       'mode' => 'default',
@@ -38,12 +38,6 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
       'langcode' => 'en',
       'status' => TRUE,
       'dependencies' => [],
-      'third_party_settings' => [
-        'field_layout' => [
-          'id' => 'layout_onecol',
-          'settings' => [],
-        ],
-      ],
       'id' => 'entity_test.entity_test.default',
       'targetEntityType' => 'entity_test',
       'bundle' => 'entity_test',
@@ -57,6 +51,8 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
         ],
       ],
       'hidden' => [],
+      'layout_id' => 'layout_onecol',
+      'layout_settings' => [],
     ];
     $this->assertEntityValues($expected, $entity_display->toArray());
 
@@ -67,7 +63,7 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     // The dependencies have been updated.
     $expected['dependencies']['module'] = [
       'entity_test',
-      'field_layout',
+      'layout_discovery',
     ];
     // A third party setting is added by the entity_test module.
     $expected['third_party_settings']['entity_test'] = ['foo' => 'bar'];
@@ -82,15 +78,9 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
 
     // Assign a new layout that has default settings and complex dependencies,
     // but do not save yet.
-    $entity_display->setLayoutId('test_layout_main_and_footer');
+    $entity_display->setLayoutFromId('test_layout_main_and_footer');
 
-    // The default settings were added.
-    $expected['third_party_settings']['field_layout'] = [
-      'id' => 'test_layout_main_and_footer',
-      'settings' => [
-        'setting_1' => 'Default',
-      ],
-    ];
+    $expected['layout_id'] = 'test_layout_main_and_footer';
     // The field was moved to the default region.
     $expected['content']['foo'] = [
       'type' => 'visible',
@@ -101,23 +91,26 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     ];
     $this->assertEntityValues($expected, $entity_display->toArray());
 
-    // After saving, the dependencies have been updated.
     $entity_display->save();
+    // After saving, the dependencies have been updated.
     $expected['dependencies']['module'] = [
       'dependency_from_annotation',
       'dependency_from_calculateDependencies',
       'entity_test',
-      'field_layout',
       'field_layout_test',
+    ];
+    // The default settings were added.
+    $expected['layout_settings'] = [
+      'setting_1' => 'Default',
     ];
     $this->assertEntityValues($expected, $entity_display->toArray());
 
     // Assign a layout with provided settings.
-    $entity_display->setLayoutId('test_layout_main_and_footer', ['setting_1' => 'foobar']);
+    $entity_display->setLayoutFromId('test_layout_main_and_footer', ['setting_1' => 'foobar']);
     $entity_display->save();
 
     // The setting overrides the default value.
-    $expected['third_party_settings']['field_layout']['settings']['setting_1'] = 'foobar';
+    $expected['layout_settings']['setting_1'] = 'foobar';
     $this->assertEntityValues($expected, $entity_display->toArray());
 
     // Move a field to the non-default region.
@@ -131,36 +124,18 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     $this->assertEntityValues($expected, $entity_display->toArray());
 
     // Assign a different layout that shares the same non-default region.
-    $entity_display->setLayoutId('test_layout_content_and_footer');
+    $entity_display->setLayoutFromId('test_layout_content_and_footer');
     $entity_display->save();
 
     // The dependencies have been updated.
     $expected['dependencies']['module'] = [
       'entity_test',
-      'field_layout',
       'field_layout_test',
     ];
     // The layout has been updated.
-    $expected['third_party_settings']['field_layout'] = [
-      'id' => 'test_layout_content_and_footer',
-      'settings' => [],
-    ];
+    $expected['layout_id'] = 'test_layout_content_and_footer';
+    $expected['layout_settings'] = [];
     // The field remains in its current region instead of moving to the default.
-    $this->assertEntityValues($expected, $entity_display->toArray());
-
-    $this->container->get('module_installer')->uninstall(['field_layout']);
-
-    $entity_storage = $this->container->get('entity_type.manager')->getStorage('entity_view_display');
-    $entity_display = $entity_storage->load('entity_test.entity_test.default');
-
-    // The dependencies have been updated.
-    $expected['dependencies']['module'] = [
-      'entity_test',
-    ];
-    // All field_layout settings were removed.
-    unset($expected['third_party_settings']['field_layout']);
-    // The field has returned to the default content region.
-    $expected['content']['foo']['region'] = 'content';
     $this->assertEntityValues($expected, $entity_display->toArray());
   }
 

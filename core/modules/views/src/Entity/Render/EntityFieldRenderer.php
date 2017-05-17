@@ -232,6 +232,7 @@ class EntityFieldRenderer extends RendererBase {
             $display->setComponent($field->definition['field_name'], [
               'type' => $field->options['type'],
               'settings' => $field->options['settings'],
+              'region' => $display->getDefaultRegion(),
             ]);
           }
           // Let the display build the render array for the entities.
@@ -240,7 +241,7 @@ class EntityFieldRenderer extends RendererBase {
           // row indexes and field IDs.
           foreach ($display_build as $row_index => $entity_build) {
             foreach ($display_fields['field_ids'] as $field_id => $field) {
-              $build[$row_index][$field_id] = !empty($entity_build[$field->definition['field_name']]) ? $entity_build[$field->definition['field_name']] : [];
+              $build[$row_index][$field_id] = $display->getFieldFromBuild($field->definition['field_name'], $entity_build);
             }
           }
         }

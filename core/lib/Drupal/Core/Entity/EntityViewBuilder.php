@@ -399,13 +399,8 @@ class EntityViewBuilder extends EntityHandlerBase implements EntityHandlerInterf
     $field_name = $items->getFieldDefinition()->getName();
     $display = $this->getSingleFieldDisplay($entity, $field_name, $display_options);
 
-    $output = [];
     $build = $display->build($entity);
-    if (isset($build[$field_name])) {
-      $output = $build[$field_name];
-    }
-
-    return $output;
+    return $display->getFieldFromBuild($field_name, $build);
   }
 
   /**
@@ -465,11 +460,14 @@ class EntityViewBuilder extends EntityHandlerBase implements EntityHandlerInterf
       $bundle = $entity->bundle();
       $key = $entity_type_id . ':' . $bundle . ':' . $field_name . ':' . Crypt::hashBase64(serialize($display_options));
       if (!isset($this->singleFieldDisplays[$key])) {
-        $this->singleFieldDisplays[$key] = EntityViewDisplay::create([
+        $display = EntityViewDisplay::create([
           'targetEntityType' => $entity_type_id,
           'bundle' => $bundle,
           'status' => TRUE,
-        ])->setComponent($field_name, $display_options);
+        ]);
+        $display_options += ['region' => $display->getDefaultRegion()];
+        $display->setComponent($field_name, $display_options);
+        $this->singleFieldDisplays[$key] = $display;
       }
       $display = $this->singleFieldDisplays[$key];
     }

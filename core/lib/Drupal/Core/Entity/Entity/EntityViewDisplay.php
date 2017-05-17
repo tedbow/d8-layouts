@@ -28,6 +28,8 @@ use Drupal\Core\TypedData\TranslatableInterface;
  *     "mode",
  *     "content",
  *     "hidden",
+ *     "layout_id",
+ *     "layout_settings",
  *   }
  * )
  */
@@ -278,9 +280,33 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
         'display' => $this,
       ];
       \Drupal::moduleHandler()->alter('entity_display_build', $build_list[$id], $context);
+      $this->applyLayout($build_list[$id]);
     }
 
     return $build_list;
+  }
+
+  /**
+   * Applies the layout to the build.
+   *
+   * @param array $build
+   *   Render array.
+   */
+  protected function applyLayout(array &$build) {
+    if ($fields = $this->getFields($build)) {
+      $regions = [];
+      foreach ($fields as $name => $field) {
+        // Move the field from the top-level of $build into a region-specific
+        // section.
+        // @todo Ideally the array structure would remain unchanged, see
+        //   https://www.drupal.org/node/2846393.
+        $regions[$field['region']][$name] = $build[$name];
+        unset($build[$name]);
+      }
+      // Ensure this will not conflict with any existing array elements by
+      // prefixing with an underscore.
+      $build['_layout'] = $this->getLayout()->build($regions);
+    }
   }
 
   /**
@@ -297,7 +323,7 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
       }
     }
 
-    return [
+    return parent::getPluginCollections() + [
       'formatters' => new EntityDisplayPluginCollection($this->pluginManager, $configurations)
     ];
   }

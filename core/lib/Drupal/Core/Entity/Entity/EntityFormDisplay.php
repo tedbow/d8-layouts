@@ -30,6 +30,8 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
  *     "mode",
  *     "content",
  *     "hidden",
+ *     "layout_id",
+ *     "layout_settings",
  *   }
  * )
  */
@@ -186,6 +188,7 @@ class EntityFormDisplay extends EntityDisplayBase implements EntityFormDisplayIn
 
     // Add a process callback so we can assign weights and hide extra fields.
     $form['#process'][] = [$this, 'processForm'];
+    $form['#process'][] = [$this, 'applyLayout'];
   }
 
   /**
@@ -208,6 +211,32 @@ class EntityFormDisplay extends EntityDisplayBase implements EntityFormDisplayIn
       if (!$this->getComponent($extra_field)) {
         $element[$extra_field]['#access'] = FALSE;
       }
+    }
+    return $element;
+  }
+
+  /**
+   * #process callback: Applies a layout to the entity form.
+   */
+  public function applyLayout($element, FormStateInterface $form_state, $form) {
+    if ($fields = $this->getFields($element)) {
+      $layout = $this->getLayout();
+      $fill = [];
+      $fill['#process'][] = '\Drupal\Core\Render\Element\RenderElement::processGroup';
+      $fill['#pre_render'][] = '\Drupal\Core\Render\Element\RenderElement::preRenderGroup';
+      $regions = array_fill_keys($layout->getPluginDefinition()->getRegionNames(), $fill);
+      foreach ($fields as $name => $field) {
+        // As this is a form, #group can be used to relocate the fields. This
+        // avoids breaking hook_form_alter() implementations by not actually
+        // moving the field in the form structure. If a #group is already set,
+        // do not overwrite it.
+        if (!isset($element[$name]['#group'])) {
+          $element[$name]['#group'] = $field['region'];
+        }
+      }
+      // Ensure this will not conflict with any existing array elements by
+      // prefixing with an underscore.
+      $element['_layout'] = $layout->build($regions);
     }
     return $element;
   }
@@ -326,7 +355,7 @@ class EntityFormDisplay extends EntityDisplayBase implements EntityFormDisplayIn
       }
     }
 
-    return [
+    return parent::getPluginCollections() + [
       'widgets' => new EntityDisplayPluginCollection($this->pluginManager, $configurations)
     ];
   }

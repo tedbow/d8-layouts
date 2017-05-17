@@ -96,6 +96,8 @@ class ImageFormatterTest extends FieldKernelTestBase {
 
     // Generate the render array to verify if the cache tags are as expected.
     $build = $this->display->build($entity);
+    // Build a fake array that provides the structure assumed by the test.
+    $build = [$this->fieldName => $this->display->getFieldFromBuild($this->fieldName, $build)];
 
     $this->assertEquals($entity->{$this->fieldName}[0]->entity->getCacheTags(), $build[$this->fieldName][0]['#cache']['tags'], 'First image cache tags is as expected');
     $this->assertEquals($entity->{$this->fieldName}[1]->entity->getCacheTags(), $build[$this->fieldName][1]['#cache']['tags'], 'Second image cache tags is as expected');
@@ -144,6 +146,8 @@ class ImageFormatterTest extends FieldKernelTestBase {
     $this->display->setComponent($this->fieldName, $component)->save();
 
     $build = $this->display->build($entity);
+    // Build a fake array that provides the structure assumed by the test.
+    $build = [$this->fieldName => $this->display->getFieldFromBuild($this->fieldName, $build)];
 
     // The first image is a PNG, so it is supported by the GD image toolkit.
     // The image style should be applied with its cache tags, image derivative

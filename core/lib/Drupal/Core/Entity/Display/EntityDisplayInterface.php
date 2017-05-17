@@ -128,4 +128,25 @@ interface EntityDisplayInterface extends ConfigEntityInterface, EntityWithPlugin
    */
   public function setTargetBundle($bundle);
 
+  /**
+   * Gets the field's portion of the fully built entity display render array.
+   *
+   * @param string $field_name
+   *   The field name.
+   * @param array $build
+   *   The full render array.
+   *
+   * @return array
+   *   The portion of the render array corresponding to the given field name.
+   */
+  public function &getFieldFromBuild($field_name, array &$build);
+
+  /**
+   * Gets the default region.
+   *
+   * @return string
+   *   The default region for this display.
+   */
+  public function getDefaultRegion();
+
 }
