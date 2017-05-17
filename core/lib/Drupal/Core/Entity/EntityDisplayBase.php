@@ -93,7 +93,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    *
    * @var string
    */
-  protected $layout_id = 'layout_onecol';
+  protected $layout_id = 'layout_default';
 
   /**
    * The layout settings.

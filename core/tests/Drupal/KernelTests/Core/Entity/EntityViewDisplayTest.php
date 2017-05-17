@@ -14,7 +14,7 @@ class EntityViewDisplayTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['entity_test', 'field_layout_test', 'layout_discovery'];
+  protected static $modules = ['entity_test', 'field_layout_test'];
 
   /**
    * @covers ::preSave
@@ -51,7 +51,7 @@ class EntityViewDisplayTest extends KernelTestBase {
         ],
       ],
       'hidden' => [],
-      'layout_id' => 'layout_onecol',
+      'layout_id' => 'layout_default',
       'layout_settings' => [],
     ];
     $this->assertEntityValues($expected, $entity_display->toArray());
@@ -63,7 +63,6 @@ class EntityViewDisplayTest extends KernelTestBase {
     // The dependencies have been updated.
     $expected['dependencies']['module'] = [
       'entity_test',
-      'layout_discovery',
     ];
     // A third party setting is added by the entity_test module.
     $expected['third_party_settings']['entity_test'] = ['foo' => 'bar'];
