@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\field\Kernel;
 
+use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\Core\Form\FormState;
 use Drupal\entity_test\Entity\EntityTest;
 
@@ -18,6 +19,14 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
     $this->container->get('router.builder')->rebuild();
     $this->installEntitySchema('entity_test_rev');
     $this->createFieldWithStorage();
+
+    EntityViewMode::create([
+      'id' => 'entity_test.full',
+      'targetEntityType' => 'entity_test',
+      'status' => TRUE,
+      'enabled' => TRUE,
+      'label' => 'Full',
+    ])->save();
   }
 
   /**
@@ -60,6 +69,7 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
       ],
     ];
     $display->setComponent($this->fieldTestData->field_name_2, $display_options_2);
+    $display->save();
 
     // View all fields.
     $content = $display->build($entity);
@@ -77,6 +87,7 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
     $entity = clone($entity_init);
     $display_options['label'] = 'hidden';
     $display->setComponent($this->fieldTestData->field_name, $display_options);
+    $display->save();
     $content = $display->build($entity);
     $this->render($content);
     $this->assertNoRaw($this->fieldTestData->field->getLabel(), "Hidden label: label is not displayed.");
@@ -84,6 +95,7 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
     // Field hidden.
     $entity = clone($entity_init);
     $display->removeComponent($this->fieldTestData->field_name);
+    $display->save();
     $content = $display->build($entity);
     $this->render($content);
     $this->assertNoRaw($this->fieldTestData->field->getLabel(), "Hidden field: label is not displayed.");
@@ -101,6 +113,7 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
         'test_formatter_setting_multiple' => $formatter_setting,
       ],
     ]);
+    $display->save();
     $content = $display->build($entity);
     $this->render($content);
     $expected_output = $formatter_setting;
@@ -119,6 +132,7 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
         'test_formatter_setting_additional' => $formatter_setting,
       ],
     ]);
+    $display->save();
     $content = $display->build($entity);
     $this->render($content);
     foreach ($values as $delta => $value) {
@@ -139,6 +153,7 @@ class FieldAttachOtherTest extends FieldKernelTestBase {
       ->setComponent($this->fieldTestData->field_name, [
         'type' => 'field_test_with_prepare_view',
       ]);
+    $display->save();
 
     // Create two entities.
     $entity1 = EntityTest::create(['id' => 1, 'type' => 'entity_test']);
