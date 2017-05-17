@@ -5,6 +5,7 @@
  * Enables semantically enriched output for Drupal sites in the form of RDFa.
  */
 
+use Drupal\comment\CommentInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\rdf\Entity\RdfMapping;
@@ -502,7 +503,19 @@ function rdf_preprocess_comment(&$variables) {
     $variables['title_attributes']['property'] = $title_mapping['properties'];
     $variables['title_attributes']['datatype'] = '';
   }
+}
 
+/**
+ * Implements hook_entity_display_build_alter().
+ */
+function rdf_entity_display_build_alter(&$build, $context) {
+  if (!($context['entity'] instanceof CommentInterface)) {
+    return;
+  }
+
+  $comment = $context['entity'];
+  $rdf_metadata_attributes = [];
+  $mapping = rdf_get_mapping('comment', $comment->bundle());
   // Annotates the parent relationship between the current comment and the node
   // it belongs to. If available, the parent comment is also annotated.
   // @todo When comments are turned into fields, this should be changed.
@@ -514,7 +527,7 @@ function rdf_preprocess_comment(&$variables) {
     // The parent entity URI is precomputed as part of the rdf_data so that it
     // can be cached as part of the entity.
     $parent_entity_attributes['resource'] = $comment->rdf_data['entity_uri'];
-    $variables['rdf_metadata_attributes'][] = $parent_entity_attributes;
+    $rdf_metadata_attributes[] = $parent_entity_attributes;
 
     // Adds the relation to parent comment, if it exists.
     if ($comment->hasParentComment()) {
@@ -522,19 +535,19 @@ function rdf_preprocess_comment(&$variables) {
       // The parent comment URI is precomputed as part of the rdf_data so that
       // it can be cached as part of the entity.
       $parent_comment_attributes['resource'] = $comment->rdf_data['pid_uri'];
-      $variables['rdf_metadata_attributes'][] = $parent_comment_attributes;
+      $rdf_metadata_attributes[] = $parent_comment_attributes;
     }
   }
   // Adds RDF metadata markup above comment body if any.
-  if (!empty($variables['rdf_metadata_attributes']) && isset($variables['content']['comment_body'])) {
+  if (!empty($rdf_metadata_attributes) && isset($build['comment_body'])) {
     $rdf_metadata = [
       '#theme' => 'rdf_metadata',
-      '#metadata' => $variables['rdf_metadata_attributes'],
+      '#metadata' => $rdf_metadata_attributes,
     ];
-    if (!empty($variables['content']['comment_body']['#prefix'])) {
-      $rdf_metadata['#suffix'] = $variables['content']['comment_body']['#prefix'];
+    if (!empty($build['comment_body']['#prefix'])) {
+      $rdf_metadata['#suffix'] = $build['comment_body']['#prefix'];
     }
-    $variables['content']['comment_body']['#prefix'] = drupal_render($rdf_metadata);
+    $build['comment_body']['#prefix'] = drupal_render($rdf_metadata);
   }
 }
 

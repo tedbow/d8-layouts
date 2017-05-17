@@ -392,13 +392,14 @@ function user_user_view(array &$build, UserInterface $account, EntityViewDisplay
 }
 
 /**
- * Implements hook_ENTITY_TYPE_view_alter() for user entities.
+ * Implements hook_entity_display_build_alter().
  *
  * This function adds a default alt tag to the user_picture field to maintain
  * accessibility.
  */
-function user_user_view_alter(array &$build, UserInterface $account, EntityViewDisplayInterface $display) {
-  if (user_picture_enabled() && !empty($build['user_picture'])) {
+function user_entity_display_build_alter(&$build, $context) {
+  $account = $context['entity'];
+  if ($account instanceof UserInterface && user_picture_enabled() && !empty($build['user_picture'])) {
     foreach (Element::children($build['user_picture']) as $key) {
       $item = $build['user_picture'][$key]['#item'];
       if (!$item->get('alt')->getValue()) {
