@@ -268,7 +268,7 @@ function system_theme() {
       ],
       'template' => 'entity-add-list',
     ],
-  ]);
+  ], \Drupal::service('plugin.manager.core.layout')->getThemeImplementations());
 }
 
 /**

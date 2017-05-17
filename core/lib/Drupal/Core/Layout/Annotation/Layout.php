@@ -67,9 +67,9 @@ class Layout extends Plugin {
   /**
    * The template file to render this layout (relative to the 'path' given).
    *
-   * If specified, then the layout_discovery module will register the template
-   * with hook_theme() and the module or theme registering this layout does not
-   * need to do it.
+   * If specified, then the system module will register the template with
+   * hook_theme() and the module or theme registering this layout does not need
+   * to do it.
    *
    * @var string optional
    *

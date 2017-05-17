@@ -1702,6 +1702,19 @@ function template_preprocess_breadcrumb(&$variables) {
 }
 
 /**
+ * Prepares variables for layout templates.
+ *
+ * @param array &$variables
+ *   An associative array containing:
+ *   - content: An associative array containing the properties of the element.
+ *     Properties used: #settings, #layout.
+ */
+function template_preprocess_layout(&$variables) {
+  $variables['settings'] = isset($variables['content']['#settings']) ? $variables['content']['#settings'] : [];
+  $variables['layout'] = isset($variables['content']['#layout']) ? $variables['content']['#layout'] : [];
+}
+
+/**
  * Callback for usort() within template_preprocess_field_multiple_value_form().
  *
  * Sorts using ['_weight']['#value']

@@ -14,7 +14,7 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['layout_discovery', 'field_layout', 'entity_test', 'field_layout_test', 'system'];
+  protected static $modules = ['field_layout', 'entity_test', 'field_layout_test', 'system'];
 
   /**
    * @covers ::preSave
@@ -68,7 +68,6 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     $expected['dependencies']['module'] = [
       'entity_test',
       'field_layout',
-      'layout_discovery',
     ];
     // A third party setting is added by the entity_test module.
     $expected['third_party_settings']['entity_test'] = ['foo' => 'bar'];

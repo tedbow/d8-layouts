@@ -645,6 +645,9 @@ services:
   plugin.manager.display_variant:
     class: Drupal\Core\Display\VariantManager
     parent: default_plugin_manager
+  plugin.manager.core.layout:
+    class: Drupal\Core\Layout\LayoutPluginManager
+    arguments: ['@container.namespaces', '@cache.discovery', '@module_handler', '@theme_handler']
   plugin.manager.queue_worker:
     class: Drupal\Core\Queue\QueueWorkerManager
     parent: default_plugin_manager
