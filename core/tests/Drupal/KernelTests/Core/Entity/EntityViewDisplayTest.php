@@ -14,7 +14,7 @@ class EntityViewDisplayTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['entity_test', 'field_layout_test'];
+  protected static $modules = ['entity_test', 'layout_test'];
 
   /**
    * @covers ::preSave
@@ -96,7 +96,7 @@ class EntityViewDisplayTest extends KernelTestBase {
       'dependency_from_annotation',
       'dependency_from_calculateDependencies',
       'entity_test',
-      'field_layout_test',
+      'layout_test',
     ];
     // The default settings were added.
     $expected['layout_settings'] = [
@@ -129,7 +129,7 @@ class EntityViewDisplayTest extends KernelTestBase {
     // The dependencies have been updated.
     $expected['dependencies']['module'] = [
       'entity_test',
-      'field_layout_test',
+      'layout_test',
     ];
     // The layout has been updated.
     $expected['layout_id'] = 'test_layout_content_and_footer';

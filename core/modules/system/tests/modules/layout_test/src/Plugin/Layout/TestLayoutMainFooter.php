@@ -1,11 +1,11 @@
 <?php
 
-namespace Drupal\field_layout_test\Plugin\Layout;
+namespace Drupal\layout_test\Plugin\Layout;
 
 use Drupal\Core\Layout\LayoutDefault;
 
 /**
- * Provides an annotated layout plugin for field_layout tests.
+ * Provides an annotated layout plugin for layout tests.
  *
  * @Layout(
  *   id = "test_layout_main_and_footer",

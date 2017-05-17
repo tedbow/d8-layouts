@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations for layout_test.
+ */
+
+/**
+ * Implements hook_layout_alter().
+ */
+function layout_test_layout_alter(&$definitions) {
+  /** @var \Drupal\Core\Layout\LayoutDefinition[] $definitions */
+  if (\Drupal::state()->get('layout_test.alter_regions') && isset($definitions['layout_default'])) {
+    $definitions['layout_default']->setRegions(['foo' => ['label' => 'Foo']]);
+  }
+}
