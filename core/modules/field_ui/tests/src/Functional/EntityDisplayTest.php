@@ -15,7 +15,7 @@ class EntityDisplayTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['field_ui', 'entity_test', 'layout_test', 'field_layout_test'];
+  public static $modules = ['field_ui', 'entity_test', 'layout_test'];
 
   /**
    * {@inheritdoc}
@@ -108,7 +108,7 @@ class EntityDisplayTest extends BrowserTestBase {
     $this->submitForm([], 'Save');
 
     // Set the test module to remove the content region.
-    \Drupal::state()->set('field_layout_test.alter_regions', TRUE);
+    \Drupal::state()->set('layout_test.alter_regions', TRUE);
     \Drupal::service('plugin.cache_clearer')->clearCachedDefinitions();
 
     // The field is still shown on the page, but now in the Disabled region.
