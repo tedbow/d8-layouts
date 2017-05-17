@@ -46,6 +46,9 @@ class SummaryLengthTest extends NodeTestBase {
     // 200 characters in length and so does not include 'What is a Drupalism?'.
     $content = $this->drupalBuildEntityView($node, 'teaser');
     $this->assertTrue(strlen($content['body'][0]['#markup']) < 200, 'Teaser is less than 200 characters long.');
+
+    // Render the entire content array.
+    $content = $this->drupalBuildFullEntityView($node, 'teaser');
     $this->setRawContent($renderer->renderRoot($content));
     $this->assertText($node->label());
     $this->assertNoRaw($expected);

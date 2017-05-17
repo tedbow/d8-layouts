@@ -60,6 +60,7 @@ abstract class WebTestBase extends TestBase {
   use XdebugRequestTrait;
   use EntityViewTrait {
     buildEntityView as drupalBuildEntityView;
+    buildFullEntityView as drupalBuildFullEntityView;
   }
 
   /**

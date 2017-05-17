@@ -11,6 +11,17 @@ use Drupal\Core\Render\Element;
 trait EntityViewTrait {
 
   /**
+   * Builds the portion of a renderable view of an entity that contains fields.
+   *
+   * @see ::buildEntityView()
+   */
+  protected function buildEntityView(EntityInterface $entity, $view_mode = 'full', $langcode = NULL, $reset = FALSE) {
+    $build = $this->buildFullEntityView($entity, $view_mode, $langcode, $reset);
+    // Currently all fields are stored at the top level, return the full array.
+    return $build;
+  }
+
+  /**
    * Builds the renderable view of an entity.
    *
    * Entities postpone the composition of their renderable arrays to #pre_render
@@ -30,11 +41,13 @@ trait EntityViewTrait {
    *   the current content language.
    * @param bool $reset
    *   (optional) Whether to clear the cache for this entity.
+   *
    * @return array
+   *   The render array for the given entity.
    *
    * @see drupal_render()
    */
-  protected function buildEntityView(EntityInterface $entity, $view_mode = 'full', $langcode = NULL, $reset = FALSE) {
+  protected function buildFullEntityView(EntityInterface $entity, $view_mode = 'full', $langcode = NULL, $reset = FALSE) {
     $ensure_fully_built = function(&$elements) use (&$ensure_fully_built) {
       // If the default values for this element have not been loaded yet, populate
       // them.

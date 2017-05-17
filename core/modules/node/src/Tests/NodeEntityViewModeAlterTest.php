@@ -43,7 +43,7 @@ class NodeEntityViewModeAlterTest extends NodeTestBase {
     $this->assertNoText('Data that should appear only in the body for the node.', 'Body text not present');
 
     // Test that the correct build mode has been set.
-    $build = $this->drupalBuildEntityView($node);
+    $build = $this->drupalBuildFullEntityView($node);
     $this->assertEqual($build['#view_mode'], 'teaser', 'The view mode has correctly been set to teaser.');
   }
 
