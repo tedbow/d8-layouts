@@ -25,7 +25,8 @@ class EntityFormDisplayEditForm extends EntityDisplayFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('plugin.manager.field.field_type'),
-      $container->get('plugin.manager.field.widget')
+      $container->get('plugin.manager.field.widget'),
+      $container->get('plugin.manager.core.layout')
     );
   }
 

@@ -4,6 +4,7 @@ namespace Drupal\field_ui\Form;
 
 use Drupal\Component\Plugin\Factory\DefaultFactory;
 use Drupal\Component\Plugin\PluginManagerBase;
+use Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
@@ -11,6 +12,9 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Field\PluginSettingsInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\SubformState;
+use Drupal\Core\Layout\LayoutPluginManagerInterface;
+use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\field_ui\Element\FieldUiTable;
 use Drupal\field_ui\FieldUI;
@@ -35,6 +39,13 @@ abstract class EntityDisplayFormBase extends EntityForm {
   protected $pluginManager;
 
   /**
+   * The layout plugin manager.
+   *
+   * @var \Drupal\Core\Layout\LayoutPluginManagerInterface
+   */
+  protected $layoutPluginManager;
+
+  /**
    * A list of field types.
    *
    * @var array
@@ -55,10 +66,13 @@ abstract class EntityDisplayFormBase extends EntityForm {
    *   The field type manager.
    * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
    *   The widget or formatter plugin manager.
+   * @param \Drupal\Core\Layout\LayoutPluginManagerInterface $layout_plugin_manager
+   *   The layout plugin manager.
    */
-  public function __construct(FieldTypePluginManagerInterface $field_type_manager, PluginManagerBase $plugin_manager) {
+  public function __construct(FieldTypePluginManagerInterface $field_type_manager, PluginManagerBase $plugin_manager, LayoutPluginManagerInterface $layout_plugin_manager) {
     $this->fieldTypes = $field_type_manager->getDefinitions();
     $this->pluginManager = $plugin_manager;
+    $this->layoutPluginManager = $layout_plugin_manager;
   }
 
   /**
@@ -248,6 +262,48 @@ abstract class EntityDisplayFormBase extends EntityForm {
       ],
       '#attributes' => ['class' => ['visually-hidden']]
     ];
+
+    $form['layouts'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Layout settings'),
+    ];
+
+    $layout_plugin = $this->getLayout($this->getEntity(), $form_state);
+
+    $form['layouts']['layout'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Select a layout'),
+      '#options' => $this->layoutPluginManager->getLayoutOptions(),
+      '#default_value' => $layout_plugin->getPluginId(),
+      '#ajax' => [
+        'callback' => '::settingsAjax',
+        'wrapper' => 'layout-settings-wrapper',
+        'trigger_as' => ['name' => 'layout_change'],
+      ],
+    ];
+    $form['layouts']['submit'] = [
+      '#type' => 'submit',
+      '#name' => 'layout_change',
+      '#value' => $this->t('Change layout'),
+      '#submit' => ['::settingsAjaxSubmit'],
+      '#attributes' => ['class' => ['js-hide']],
+      '#ajax' => [
+        'callback' => '::settingsAjax',
+        'wrapper' => 'layout-settings-wrapper',
+      ],
+    ];
+
+    $form['layouts']['settings_wrapper'] = [
+      '#type' => 'container',
+      '#id' => 'layout-settings-wrapper',
+      '#tree' => TRUE,
+    ];
+
+    if ($layout_plugin instanceof PluginFormInterface) {
+      $form['layouts']['settings_wrapper']['layout_settings'] = [];
+      $subform_state = SubformState::createForSubform($form['layouts']['settings_wrapper']['layout_settings'], $form, $form_state);
+      $form['layouts']['settings_wrapper']['layout_settings'] = $layout_plugin->buildConfigurationForm($form['layouts']['settings_wrapper']['layout_settings'], $subform_state);
+    }
 
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
@@ -520,6 +576,19 @@ abstract class EntityDisplayFormBase extends EntityForm {
   /**
    * {@inheritdoc}
    */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+
+    $layout_plugin = $this->getLayout($this->getEntity(), $form_state);
+    if ($layout_plugin instanceof PluginFormInterface) {
+      $subform_state = SubformState::createForSubform($form['layouts']['settings_wrapper']['layout_settings'], $form, $form_state);
+      $layout_plugin->validateConfigurationForm($form['layouts']['settings_wrapper']['layout_settings'], $subform_state);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // If the main "Save" button was submitted while a field settings subform
     // was being edited, update the new incoming settings when rebuilding the
@@ -529,6 +598,15 @@ abstract class EntityDisplayFormBase extends EntityForm {
     }
 
     parent::submitForm($form, $form_state);
+
+    $layout_plugin = $this->getLayout($this->entity, $form_state);
+    if ($layout_plugin instanceof PluginFormInterface) {
+      $subform_state = SubformState::createForSubform($form['layouts']['settings_wrapper']['layout_settings'], $form, $form_state);
+      $layout_plugin->submitConfigurationForm($form['layouts']['settings_wrapper']['layout_settings'], $subform_state);
+    }
+
+    $this->entity->setLayout($layout_plugin);
+
     $form_values = $form_state->getValues();
 
     // Handle the 'display modes' checkboxes if present.
@@ -693,6 +771,47 @@ abstract class EntityDisplayFormBase extends EntityForm {
 
     // Return the whole table.
     return $form['fields'];
+  }
+
+  /**
+   * Gets the layout plugin for the currently selected layout.
+   *
+   * @param \Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface $entity
+   *   The current form entity.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Layout\LayoutInterface
+   *   The layout plugin.
+   */
+  protected function getLayout(EntityDisplayWithLayoutInterface $entity, FormStateInterface $form_state) {
+    if (!$layout_plugin = $form_state->get('layout_plugin')) {
+      $stored_layout_id = $entity->getLayoutId();
+      // Use selected layout if it exists, falling back to the stored layout.
+      $layout_id = $form_state->getValue('layout', $stored_layout_id);
+      // If the current layout is the stored layout, use the stored layout
+      // settings. Otherwise leave the settings empty.
+      $layout_settings = $layout_id === $stored_layout_id ? $entity->getLayoutSettings() : [];
+
+      $layout_plugin = $this->layoutPluginManager->createInstance($layout_id, $layout_settings);
+      $form_state->set('layout_plugin', $layout_plugin);
+    }
+    return $layout_plugin;
+  }
+
+  /**
+   * Ajax callback for the layout settings form.
+   */
+  public static function settingsAjax($form, FormStateInterface $form_state) {
+    return $form['layouts']['settings_wrapper'];
+  }
+
+  /**
+   * Submit handler for the non-JS case.
+   */
+  public function settingsAjaxSubmit($form, FormStateInterface $form_state) {
+    $form_state->set('layout_plugin', NULL);
+    $form_state->setRebuild();
   }
 
   /**

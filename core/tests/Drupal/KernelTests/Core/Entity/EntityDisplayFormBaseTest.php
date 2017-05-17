@@ -119,7 +119,7 @@ class EntityDisplayFormBaseTest extends KernelTestBase {
       })
       ->shouldBeCalled();
 
-    $form_object = new EntityViewDisplayEditForm($this->container->get('plugin.manager.field.field_type'), $this->container->get('plugin.manager.field.formatter'));
+    $form_object = EntityViewDisplayEditForm::create($this->container);
     $form_object->setEntityManager($this->container->get('entity.manager'));
     $form_object->setEntity($entity->reveal());
 
