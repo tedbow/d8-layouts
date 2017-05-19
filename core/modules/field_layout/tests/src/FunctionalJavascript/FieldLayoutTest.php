@@ -15,7 +15,7 @@ class FieldLayoutTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['field_layout', 'field_ui', 'field_layout_test', 'layout_test'];
+  public static $modules = ['field_layout', 'field_ui', 'field_layout_test', 'layout_test', 'layout_discovery'];
 
   /**
    * {@inheritdoc}
@@ -47,9 +47,22 @@ class FieldLayoutTest extends JavascriptTestBase {
   public function testEntityViewModes() {
     // By default, the field is not visible.
     $this->drupalGet('entity_test/1/test');
-    $this->assertSession()->elementNotExists('css', '.layout__region--content .field--name-field-test-text');
+    $this->assertSession()->elementNotExists('css', '.field--name-field-test-text');
     $this->drupalGet('entity_test/1');
-    $this->assertSession()->elementNotExists('css', '.layout__region--content .field--name-field-test-text');
+    $this->assertSession()->elementNotExists('css', '.field--name-field-test-text');
+
+    // Show the field.
+    $this->drupalGet('entity_test/structure/entity_test/display');
+    $this->getSession()->getPage()->pressButton('Show row weights');
+    $this->getSession()->getPage()->selectFieldOption('fields[field_test_text][region]', 'content');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->submitForm([], 'Save');
+
+    // Switch the layout to one column.
+    $this->click('#edit-field-layouts');
+    $this->getSession()->getPage()->selectFieldOption('field_layout', 'layout_test_1col');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->submitForm([], 'Save');
 
     // Change the layout for the "test" view mode. See
     // core.entity_view_mode.entity_test.test.yml.
@@ -58,26 +71,27 @@ class FieldLayoutTest extends JavascriptTestBase {
     $this->getSession()->getPage()->checkField('display_modes_custom[test]');
     $this->submitForm([], 'Save');
     $this->clickLink('configure them');
-    $this->getSession()->getPage()->pressButton('Show row weights');
-    $this->getSession()->getPage()->selectFieldOption('fields[field_test_text][region]', 'content');
+    $this->click('#edit-field-layouts');
+    $this->getSession()->getPage()->selectFieldOption('field_layout', 'layout_test_2col');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->submitForm([], 'Save');
+
+    // Move the field to a new region.
+    $this->getSession()->getPage()->selectFieldOption('fields[field_test_text][region]', 'right');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->submitForm([], 'Save');
 
     // Each view mode has a different layout.
     $this->drupalGet('entity_test/1/test');
-    $this->assertSession()->elementExists('css', '.layout__region--content .field--name-field-test-text');
+    $this->assertSession()->elementExists('css', '.layout-example-2col .region-right .field--name-field-test-text');
     $this->drupalGet('entity_test/1');
-    $this->assertSession()->elementNotExists('css', '.layout__region--content .field--name-field-test-text');
+    $this->assertSession()->elementExists('css', '.layout-example-1col .region-top .field--name-field-test-text');
   }
 
   /**
    * Tests the use of field layout for entity form displays.
    */
   public function testEntityForm() {
-    // By default, the one-column layout is used.
-    $this->drupalGet('entity_test/manage/1/edit');
-    $this->assertFieldInRegion('field_test_text[0][value]', 'content');
-
     // The one-column layout is in use.
     $this->drupalGet('entity_test/structure/entity_test/form-display');
     $this->assertEquals(['Content', 'Disabled'], $this->getRegionTitles());
