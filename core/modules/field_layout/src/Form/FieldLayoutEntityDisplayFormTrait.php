@@ -24,28 +24,6 @@ trait FieldLayoutEntityDisplayFormTrait {
   protected $layoutPluginManager;
 
   /**
-   * Overrides \Drupal\field_ui\Form\EntityDisplayFormBase::getRegions().
-   */
-  public function getRegions() {
-    $regions = [];
-
-    $layout_definition = $this->layoutPluginManager->getDefinition($this->getEntity()->getLayoutId());
-    foreach ($layout_definition->getRegions() as $name => $region) {
-      $regions[$name] = [
-        'title' => $region['label'],
-        'message' => $this->t('No field is displayed.'),
-      ];
-    }
-
-    $regions['hidden'] = [
-      'title' => $this->t('Disabled', [], ['context' => 'Plural']),
-      'message' => $this->t('No field is hidden.'),
-    ];
-
-    return $regions;
-  }
-
-  /**
    * Overrides \Drupal\field_ui\Form\EntityDisplayFormBase::form().
    */
   public function form(array $form, FormStateInterface $form_state) {

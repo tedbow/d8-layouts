@@ -44,7 +44,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
   /**
    * The entity being used by this form.
    *
-   * @var \Drupal\Core\Entity\Display\EntityDisplayInterface
+   * @var \Drupal\Core\Entity\Display\EntityDisplayWithLayoutInterface
    */
   protected $entity;
 
@@ -90,17 +90,22 @@ abstract class EntityDisplayFormBase extends EntityForm {
    *   @endcode
    */
   public function getRegions() {
-    return [
-      'content' => [
-        'title' => $this->t('Content'),
-        'invisible' => TRUE,
-        'message' => $this->t('No field is displayed.')
-      ],
-      'hidden' => [
-        'title' => $this->t('Disabled', [], ['context' => 'Plural']),
-        'message' => $this->t('No field is hidden.')
-      ],
+    $regions = [];
+
+    $layout_definition = $this->entity->getLayout()->getPluginDefinition();
+    foreach ($layout_definition->getRegions() as $name => $region) {
+      $regions[$name] = [
+        'title' => $region['label'],
+        'message' => $this->t('No field is displayed.'),
+      ];
+    }
+
+    $regions['hidden'] = [
+      'title' => $this->t('Disabled', [], ['context' => 'Plural']),
+      'message' => $this->t('No field is hidden.'),
     ];
+
+    return $regions;
   }
 
   /**
