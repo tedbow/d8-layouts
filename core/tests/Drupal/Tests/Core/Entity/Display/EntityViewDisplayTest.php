@@ -87,10 +87,14 @@ class EntityViewDisplayTest extends UnitTestCase {
    * @covers ::getFields
    */
   public function testApplyLayout() {
+    $configurable_field_definition = $this->prophesize(FieldDefinitionInterface::class);
+    $configurable_field_definition->isDisplayConfigurable('view')->willReturn(TRUE);
+
     $non_configurable_field_definition = $this->prophesize(FieldDefinitionInterface::class);
     $non_configurable_field_definition->isDisplayConfigurable('view')->willReturn(FALSE);
 
     $definitions = [];
+    $definitions['configurable_field'] = $configurable_field_definition->reveal();
     $definitions['non_configurable_field'] = $non_configurable_field_definition->reveal();
     $definitions['non_configurable_field_with_extra_field'] = $non_configurable_field_definition->reveal();
     $this->entityFieldManager->getFieldDefinitions('the_entity_type_id', 'the_entity_type_bundle')->willReturn($definitions);
@@ -104,6 +108,9 @@ class EntityViewDisplayTest extends UnitTestCase {
     $build = [
       'test1' => [
         '#markup' => 'Test1',
+      ],
+      'configurable_field' => [
+        '#markup' => 'Configurable',
       ],
       'non_configurable_field' => [
         '#markup' => 'Non-configurable',
@@ -121,6 +128,9 @@ class EntityViewDisplayTest extends UnitTestCase {
         'layout_settings' => [],
         'content' => [
           'test1' => [
+            'region' => 'right',
+          ],
+          'configurable_field' => [
             'region' => 'right',
           ],
           'non_configurable_field' => [
@@ -148,6 +158,9 @@ class EntityViewDisplayTest extends UnitTestCase {
           'test1' => [
             '#markup' => 'Test1',
           ],
+          'configurable_field' => [
+            '#markup' => 'Configurable',
+          ],
         ],
         '#settings' => [],
         '#layout' => $this->pluginDefinition,
@@ -165,12 +178,204 @@ class EntityViewDisplayTest extends UnitTestCase {
     $method_ref->invokeArgs($display, [&$build]);
     $this->assertEquals($expected, $build);
     $this->assertSame($expected, $build);
+  }
 
-    // Use getFieldFromBuild() to manipulate the array.
-    $field_element = &$display->getFieldFromBuild('test1', $build);
-    $field_element['#title'] = 'My title';
-    $expected['_layout']['right']['test1']['#title'] = 'My title';
+  /**
+   * @covers ::getFieldFromBuild
+   * @dataProvider providerTestGetFieldFromBuild
+   */
+  public function testGetFieldFromBuild($field_name, $expected_field_array) {
+    $configurable_field_definition = $this->prophesize(FieldDefinitionInterface::class);
+    $configurable_field_definition->isDisplayConfigurable('view')->willReturn(TRUE);
+    $non_configurable_field_definition = $this->prophesize(FieldDefinitionInterface::class);
+    $non_configurable_field_definition->isDisplayConfigurable('view')->willReturn(FALSE);
+
+    $definitions = [];
+    $definitions['configurable_field'] = $configurable_field_definition->reveal();
+    $definitions['non_configurable_field'] = $non_configurable_field_definition->reveal();
+    $this->entityFieldManager->getFieldDefinitions('the_entity_type_id', 'the_entity_type_bundle')->willReturn($definitions);
+    $this->entityFieldManager->getExtraFields('the_entity_type_id', 'the_entity_type_bundle')->willReturn([]);
+
+    $display = new EntityViewDisplay(
+      [
+        'targetEntityType' => 'the_entity_type_id',
+        'bundle' => 'the_entity_type_bundle',
+        'layout_id' => 'two_column',
+        'layout_settings' => [],
+        'content' => [
+          'test1' => [
+            'region' => 'right',
+          ],
+          'configurable_field' => [
+            'region' => 'right',
+          ],
+          'non_configurable_field' => [
+            'region' => 'left',
+          ],
+        ],
+      ],
+      'entity_view_display'
+    );
+
+    $build = [
+      'test1' => [
+        '#markup' => 'Test1',
+      ],
+      'configurable_field' => [
+        '#markup' => 'Configurable',
+      ],
+      'non_configurable_field' => [
+        '#markup' => 'Non-configurable',
+      ],
+    ];
+    $method_ref = new \ReflectionMethod($display, 'applyLayout');
+    $method_ref->setAccessible(TRUE);
+    $method_ref->invokeArgs($display, [&$build]);
+
+    $field_array = $display->getFieldFromBuild($field_name, $build);
+    $this->assertEquals($expected_field_array, $field_array);
+
+    $expected = [
+      'non_configurable_field' => [
+        '#markup' => 'Non-configurable',
+      ],
+      '_layout' => [
+        'right' => [
+          'test1' => [
+            '#markup' => 'Test1',
+          ],
+          'configurable_field' => [
+            '#markup' => 'Configurable',
+          ],
+        ],
+        '#settings' => [],
+        '#layout' => $this->pluginDefinition,
+        '#theme' => 'layout__twocol',
+        '#attached' => [
+          'library' => [
+            'system/drupal.layout.twocol',
+          ],
+        ],
+      ],
+    ];
     $this->assertEquals($expected, $build);
+  }
+
+  /**
+   * Provides test data for ::testGetFieldFromBuild().
+   */
+  public function providerTestGetFieldFromBuild() {
+    $data = [];
+    $data['in_region'] = ['test1', ['#markup' => 'Test1']];
+    $data['not_in_region'] = ['non_configurable_field', ['#markup' => 'Non-configurable']];
+    return $data;
+  }
+
+  /**
+   * @covers ::getFieldFromBuild
+   * @dataProvider providerTestGetFieldFromBuildUnknownField
+   */
+  public function testGetFieldFromBuildUnknownField($field_name) {
+    $display = new EntityViewDisplay(
+      [
+        'targetEntityType' => 'the_entity_type_id',
+        'bundle' => 'the_entity_type_bundle',
+        'layout_id' => 'two_column',
+        'layout_settings' => [],
+        'content' => [
+          'test1' => [
+            'region' => 'right',
+          ],
+        ],
+      ],
+      'entity_view_display'
+    );
+
+    $this->setExpectedException(\InvalidArgumentException::class, 'The field "' . $field_name . '" was not expected');
+    $build = [];
+    $display->getFieldFromBuild($field_name, $build);
+  }
+
+  /**
+   * Provides test data for ::testGetFieldFromBuildUnknownField().
+   */
+  public function providerTestGetFieldFromBuildUnknownField() {
+    $data = [];
+    $data['in_region'] = ['test1'];
+    $data['not_in_region'] = ['non_configurable_field'];
+    return $data;
+  }
+
+  /**
+   * @covers ::setFieldOnBuild
+   */
+  public function testSetFieldOnBuild() {
+    $extra_fields = [];
+    $extra_fields['display']['an_extra_field'] = [
+      'label' => 'An extra field',
+      'visible' => TRUE,
+      'weight' => 0,
+    ];
+    $this->entityFieldManager->getExtraFields('the_entity_type_id', 'the_entity_type_bundle')->willReturn($extra_fields);
+    $this->entityFieldManager->getFieldDefinitions('the_entity_type_id', 'the_entity_type_bundle')->willReturn([]);
+    $display = new EntityViewDisplay(
+      [
+        'targetEntityType' => 'the_entity_type_id',
+        'bundle' => 'the_entity_type_bundle',
+        'mode' => 'full',
+        'layout_id' => 'two_column',
+        'layout_settings' => [],
+        'content' => [
+          'test1' => [
+            'region' => 'right',
+          ],
+        ],
+      ],
+      'entity_view_display'
+    );
+
+    $expected = [
+      '_layout' => [
+        'right' => [
+          'test1' => [
+            '#markup' => 'Test1',
+          ],
+        ],
+      ],
+      'an_extra_field' => [
+        '#markup' => 'An extra field',
+      ],
+    ];
+
+    $build = [];
+    $display->setFieldOnBuild('test1', ['#markup' => 'Test1'], $build);
+    $display->setFieldOnBuild('an_extra_field', ['#markup' => 'An extra field'], $build);
+    $this->assertEquals($expected, $build);
+    $this->assertSame($expected, $build);
+  }
+
+  /**
+   * @covers ::setFieldOnBuild
+   */
+  public function testSetFieldOnBuildUnknownField() {
+    $display = new EntityViewDisplay(
+      [
+        'targetEntityType' => 'the_entity_type_id',
+        'bundle' => 'the_entity_type_bundle',
+        'layout_id' => 'two_column',
+        'layout_settings' => [],
+        'content' => [
+          'test1' => [
+            'region' => 'right',
+          ],
+        ],
+      ],
+      'entity_view_display'
+    );
+
+    $this->setExpectedException(\InvalidArgumentException::class, 'The field "unknown" was not expected');
+    $build = [];
+    $display->setFieldOnBuild('unknown', ['#markup' => 'Unknown'], $build);
   }
 
 }

@@ -684,23 +684,6 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   /**
    * {@inheritdoc}
    */
-  public function &getFieldFromBuild($field_name, array &$build) {
-    $field_component = $this->getComponent($field_name);
-    if (isset($build[$field_name])) {
-      $output = &$build[$field_name];
-    }
-    elseif (isset($field_component['region']) && isset($build['_layout'][$field_component['region']][$field_name])) {
-      $output = &$build['_layout'][$field_component['region']][$field_name];
-    }
-    else {
-      $output = [];
-    }
-    return $output;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function __sleep() {
     // Only store the definition, not external objects or derived data.
     $keys = array_keys($this->toArray());

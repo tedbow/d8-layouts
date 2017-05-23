@@ -287,6 +287,41 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function getFieldFromBuild($field_name, array $build) {
+    if ($field_component = $this->getComponent($field_name)) {
+      if (isset($build[$field_name])) {
+        return $build[$field_name];
+      }
+      elseif (isset($field_component['region']) && isset($build['_layout'][$field_component['region']][$field_name])) {
+        return $build['_layout'][$field_component['region']][$field_name];
+      }
+    }
+
+    throw new \InvalidArgumentException(sprintf('The field "%s" was not expected', $field_name));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setFieldOnBuild($field_name, array $field_array, array &$build) {
+    $field_component = $this->getComponent($field_name);
+    if (!$field_component) {
+      throw new \InvalidArgumentException(sprintf('The field "%s" was not expected', $field_name));
+    }
+
+    if (isset($field_component['region'])) {
+      $build['_layout'][$field_component['region']][$field_name] = $field_array;
+    }
+    else {
+      $build[$field_name] = $field_array;
+    }
+
+    return $this;
+  }
+
+  /**
    * Applies the layout to the build.
    *
    * @param array $build

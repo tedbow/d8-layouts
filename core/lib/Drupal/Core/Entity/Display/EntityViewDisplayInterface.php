@@ -46,4 +46,37 @@ interface EntityViewDisplayInterface extends EntityDisplayInterface {
    */
   public function buildMultiple(array $entities);
 
+  /**
+   * Gets the field's portion of the fully built entity display render array.
+   *
+   * @param string $field_name
+   *   The field name.
+   * @param array $build
+   *   The full render array.
+   *
+   * @return array
+   *   The portion of the render array corresponding to the given field name.
+   *
+   * @throws \InvalidArgumentException
+   *   Thrown when the field name is not a valid field for this entity display.
+   */
+  public function getFieldFromBuild($field_name, array $build);
+
+  /**
+   * Sets the render array for the field's portion entity display render array.
+   *
+   * @param string $field_name
+   *   The field name.
+   * @param array $field_array
+   *   The field's portion of the render array.
+   * @param array $build
+   *   The full render array.
+   *
+   * @return $this
+   *
+   * @throws \InvalidArgumentException
+   *   Thrown when the field name is not a valid field for this entity display.
+   */
+  public function setFieldOnBuild($field_name, array $field_array, array &$build);
+
 }
