@@ -56,9 +56,6 @@ interface EntityViewDisplayInterface extends EntityDisplayInterface {
    *
    * @return array
    *   The portion of the render array corresponding to the given field name.
-   *
-   * @throws \InvalidArgumentException
-   *   Thrown when the field name is not a valid field for this entity display.
    */
   public function getFieldFromBuild($field_name, array $build);
 

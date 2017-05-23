@@ -268,41 +268,7 @@ class EntityViewDisplayTest extends UnitTestCase {
     $data = [];
     $data['in_region'] = ['test1', ['#markup' => 'Test1']];
     $data['not_in_region'] = ['non_configurable_field', ['#markup' => 'Non-configurable']];
-    return $data;
-  }
-
-  /**
-   * @covers ::getFieldFromBuild
-   * @dataProvider providerTestGetFieldFromBuildUnknownField
-   */
-  public function testGetFieldFromBuildUnknownField($field_name) {
-    $display = new EntityViewDisplay(
-      [
-        'targetEntityType' => 'the_entity_type_id',
-        'bundle' => 'the_entity_type_bundle',
-        'layout_id' => 'two_column',
-        'layout_settings' => [],
-        'content' => [
-          'test1' => [
-            'region' => 'right',
-          ],
-        ],
-      ],
-      'entity_view_display'
-    );
-
-    $this->setExpectedException(\InvalidArgumentException::class, 'The field "' . $field_name . '" was not expected');
-    $build = [];
-    $display->getFieldFromBuild($field_name, $build);
-  }
-
-  /**
-   * Provides test data for ::testGetFieldFromBuildUnknownField().
-   */
-  public function providerTestGetFieldFromBuildUnknownField() {
-    $data = [];
-    $data['in_region'] = ['test1'];
-    $data['not_in_region'] = ['non_configurable_field'];
+    $data['non-existent'] = ['missing', []];
     return $data;
   }
 

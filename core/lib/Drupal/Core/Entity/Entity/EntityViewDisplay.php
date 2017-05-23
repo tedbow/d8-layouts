@@ -299,7 +299,7 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
       }
     }
 
-    throw new \InvalidArgumentException(sprintf('The field "%s" was not expected', $field_name));
+    return [];
   }
 
   /**
