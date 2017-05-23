@@ -9,6 +9,7 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Entity\Display\EntityDisplayInterface;
 use Drupal\Core\Layout\LayoutInterface;
 use Drupal\Core\Plugin\DefaultSingleLazyPluginCollection;
+use Zend\Stdlib\ArrayUtils;
 
 /**
  * Provides a common base class for entity view and form displays.
@@ -600,22 +601,27 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    */
   protected function getFields(array $build) {
     $components = $this->getComponents();
+    $field_definitions = $this->getFieldDefinitions();
+    $extra_fields = $this->getExtraFields();
+    return ArrayUtils::filter($components, function ($component_id) use ($field_definitions, $extra_fields, $build) {
+      // Only include fields present in the build.
+      if (!isset($build[$component_id])) {
+        return FALSE;
+      }
 
-    // Ignore any extra fields from the list of field definitions. Field
-    // definitions can have a non-configurable display, but all extra fields are
-    // always displayed.
-    $field_definitions = array_diff_key($this->getFieldDefinitions(), $this->getExtraFields());
+      // Extra fields are always displayed.
+      if (isset($extra_fields[$component_id])) {
+        return TRUE;
+      }
 
-    $fields_to_exclude = array_filter($field_definitions, function (FieldDefinitionInterface $field_definition) {
-      // Remove fields with a non-configurable display.
-      return !$field_definition->isDisplayConfigurable($this->displayContext);
-    });
-    $components = array_diff_key($components, $fields_to_exclude);
+      // Only include fields with a configurable display.
+      if (isset($field_definitions[$component_id])) {
+        return $field_definitions[$component_id]->isDisplayConfigurable($this->displayContext);
+      }
 
-    // Only include fields present in the build.
-    $components = array_intersect_key($components, $build);
-
-    return $components;
+      // The origin of this field is unknown, include it in the list.
+      return TRUE;
+    }, ArrayUtils::ARRAY_FILTER_USE_KEY);
   }
 
   /**
