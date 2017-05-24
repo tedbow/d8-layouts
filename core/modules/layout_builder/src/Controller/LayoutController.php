@@ -205,7 +205,21 @@ class LayoutController extends ControllerBase {
     $blocks = [];
     foreach ($manager->getDefinitions() as $plugin_id => $definition) {
       $blocks[$definition['category']][] = [
-        '#markup' => $this->l($definition['admin_label'], new Url('layout_builder.add_block', ['entity_type' => $entity_type, 'entity' => $entity, 'field_name' => $field_name, 'delta' => $delta, 'region' => $region, 'plugin_id' => $plugin_id]))
+        'title' => $definition['admin_label'],
+        'url' => Url::fromRoute('layout_builder.add_block',
+          [
+            'entity_type' => $entity_type,
+            'entity' => $entity,
+            'field_name' => $field_name,
+            'delta' => $delta, 'region' => $region,
+            'plugin_id' => $plugin_id,
+          ],
+        ),
+        'attributes' => [
+          'data-dialog-type' => 'dialog',
+          'data-dialog-renderer' => 'off_canvas',
+          'class' => ['use-ajax'],
+        ],
       ];
     }
     $build = [];
@@ -213,8 +227,8 @@ class LayoutController extends ControllerBase {
     foreach ($blocks as $category => $links) {
       $build[$category]['title'] = ['#markup' => '<h3>' . $category . '</h3>'];
       $build[$category]['links'] = [
-        '#theme' => 'item_list',
-        '#items' => $links
+        '#theme' => 'links',
+        '#links' => $links
       ];
     }
     $build['#prefix'] = "<div class=\"block-categories\">";
